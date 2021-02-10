@@ -1,0 +1,42 @@
+.traffic-light {
+    display: flex;
+    align-items: center;
+
+    &__box{
+    display:inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-right: 1em;
+    background-color: #000;
+    }
+    
+    &__lamp{
+
+    height: 1em;
+    width: 1em;
+    margin: 5px;
+    border-radius: 50%;
+    
+        &--black {
+            background-color: #000;
+        }
+
+        &--green { 
+            background-color: #006400; 
+        }
+
+        &--orange { 
+            background-color: #ffa500; 
+        }
+
+        &--red {
+            background-color: #ff0000 ;
+        }
+
+    }
+
+    &__message{
+        font-size: .7em;
+    }
+}
