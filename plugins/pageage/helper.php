@@ -3,11 +3,29 @@ class helper_plugin_pageage extends DokuWiki_Plugin
 {
     
 /**
- * Build a navigation menu from a list
+ * Display a traffic light symbolizing the last time the page was modified
  *
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author     Alex Krippner
  */
+
+    /** @var helper_plugin_sqlite */
+    private $db = null;
+
+    /**
+     * Constructor. Initializes the SQLite DB Connection
+     */
+    public function __construct()
+    {
+        $this->db = plugin_load('helper', 'sqlite');
+        if (!$this->db) {
+            msg('Please install sqlite plugin to log page visits.');
+            return;
+        }
+        if (!$this->db->init('pageage', dirname(__FILE__) . '/db/')) {
+            $this->db = null;
+        }
+    }
     
     public function getTrafficSignal()
     {
@@ -18,10 +36,16 @@ class helper_plugin_pageage extends DokuWiki_Plugin
 
         $lastmodUNIXTimestamp = $INFO["lastmod"];
         $monthInSeconds = 2629800;
-        $lastmodDate = date("Y-m-d", $lastmodUNIXTimestamp);
+        $lastmodDate = date("Y-m-d H:i:s", $lastmodUNIXTimestamp);
         $todayUNIXTimestamp = time();
         $pageageInSeconds = $todayUNIXTimestamp - $lastmodUNIXTimestamp;
 
+
+        // save page visit in sqlite database
+        $this->savePagevisit();
+    
+        // display last visitor username and date
+        $lastVisitHTML =  $this->createLastVisitHTML();
 
         // the default html will produce a green traffic light
         if ($pageageInSeconds <= $monthInSeconds) {
@@ -41,10 +65,51 @@ class helper_plugin_pageage extends DokuWiki_Plugin
             $trafficLight_html = $this->createTrafficLight(1, $msg);
         }
 
-        return $trafficLight_html;
+        return $lastVisitHTML . $trafficLight_html;
     }
 
-    
+    public function savePagevisit()
+    {
+        if (!$this->db) {
+            return;
+        };
+        
+        global $INFO;
+        global $USERINFO;
+
+        $dateToday = date("Y-m-d H:i:s", time());
+
+        $this->db->query(
+            'INSERT INTO pages(page, date, user)
+             VALUES (?, ?, ?)',
+            $INFO["id"],
+            $dateToday,
+            $USERINFO["name"]
+        );
+    }
+
+    public function createLastVisitHTML()
+    {
+        if (!$this->db) {
+            return;
+        };
+
+        global $INFO;
+        $currentPage = $INFO["id"];
+
+        $query = "SELECT page, date, user FROM pages WHERE page = '$currentPage' ORDER BY date DESC;";
+
+        $res = $this->db->query($query);
+
+        $lastVisitorsLog = $this->db->res2arr($res);
+        $lastVisitorDetails = $lastVisitorsLog[1];
+        $lastVisitor = $lastVisitorDetails["user"];
+        $lastVisitedDate = $lastVisitorDetails["date"];
+
+        $lastVisitorHTML = "<div> The last visitor was $lastVisitor on the $lastVisitedDate </div>";
+ 
+        return $lastVisitorHTML;
+    }
 
     private function createTrafficLight($position, $msg)
     {
