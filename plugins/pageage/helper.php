@@ -1,55 +1,50 @@
 <?php
-
-class action_plugin_pageage extends DokuWiki_Action_Plugin
+class helper_plugin_pageage extends DokuWiki_Plugin
 {
-    public function register(Doku_Event_Handler $controller)
-    {
-        $controller->register_hook('TPL_CONTENT_DISPLAY', 'BEFORE', $this, 'handle_display_pageage');
-    }
-
-    /**
-     * The function calculates the age of the page since last modified
-     * and returns a traffic light signal accordingly.
-     * Green: Less than 1 month
-     * Orange: Greater than 1 month and less than 3 months
-     * Red: Greater than 3 months
-     */
-    public function handle_display_pageage($event, $param)
+    
+/**
+ * Build a navigation menu from a list
+ *
+ * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
+ * @author     Alex Krippner
+ */
+    
+    public function getTrafficSignal()
     {
         global $INFO;
-        
         if ($_REQUEST["do"] == "edit") {
             return;
         }
 
-     
         $lastmodUNIXTimestamp = $INFO["lastmod"];
         $monthInSeconds = 2629800;
         $lastmodDate = date("Y-m-d", $lastmodUNIXTimestamp);
         $todayUNIXTimestamp = time();
         $pageageInSeconds = $todayUNIXTimestamp - $lastmodUNIXTimestamp;
- 
-        // create a green traffic light if the page was last modified less than a month
+
+
+        // the default html will produce a green traffic light
         if ($pageageInSeconds <= $monthInSeconds) {
             $msg = "The page has been recently modified on the $lastmodDate";
             $trafficLight_html = $this->createTrafficLight(2, $msg);
         };
 
-        // create a red traffic light if the page was last modified more than 3 months ago
+        // check if date is older than 3 months
         if ($pageageInSeconds > (3 * $monthInSeconds)) {
             $msg = "The page has not been modified for more than 3 months on the $lastmodDate";
             $trafficLight_html = $this->createTrafficLight(0, $msg);
         }
 
-        // create a orange traffic light if the page was last modified between 1 and 3 months
+        // check if date less than 3 months and older than 1 month
         if ($pageageInSeconds < (3 * $monthInSeconds) && $pageageInSeconds > $monthInSeconds) {
             $msg = "The page has not been modified for more than 1 month on the $lastmodDate";
             $trafficLight_html = $this->createTrafficLight(1, $msg);
         }
-        
 
-        $event->data .= $trafficLight_html;
+        return $trafficLight_html;
     }
+
+    
 
     private function createTrafficLight($position, $msg)
     {
