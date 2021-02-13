@@ -3,7 +3,6 @@ class helper_plugin_pageage extends DokuWiki_Plugin
 {
     
 /**
- * Display a traffic light symbolizing the last time the page was modified
  *
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author     Alex Krippner
@@ -27,12 +26,27 @@ class helper_plugin_pageage extends DokuWiki_Plugin
         }
     }
     
-    public function getTrafficSignal()
+    public function getLastVisitAndTrafficLight()
     {
-        global $INFO;
         if ($_REQUEST["do"] == "edit") {
             return;
         }
+
+        // save page visit in sqlite database
+        $this->savePagevisit();
+            
+        // display last visitor username and date
+        $lastVisitHTML =  $this->createLastVisitHTML();
+
+        // get traffic light HTML
+        $trafficLight_html = $this->getTrafficLight();
+
+        return $lastVisitHTML . $trafficLight_html;
+    }
+
+    public function getTrafficLight()
+    {
+        global $INFO;
 
         $lastmodUNIXTimestamp = $INFO["lastmod"];
         $monthInSeconds = 2629800;
@@ -40,32 +54,25 @@ class helper_plugin_pageage extends DokuWiki_Plugin
         $todayUNIXTimestamp = time();
         $pageageInSeconds = $todayUNIXTimestamp - $lastmodUNIXTimestamp;
 
-
-        // save page visit in sqlite database
-        $this->savePagevisit();
-    
-        // display last visitor username and date
-        $lastVisitHTML =  $this->createLastVisitHTML();
-
-        // the default html will produce a green traffic light
-        if ($pageageInSeconds <= $monthInSeconds) {
-            $msg = "The page has been recently modified on the $lastmodDate";
-            $trafficLight_html = $this->createTrafficLight(2, $msg);
-        };
-
-        // check if date is older than 3 months
+        // create a red traffic light if the page was last modified more than 3 months ago
         if ($pageageInSeconds > (3 * $monthInSeconds)) {
             $msg = "The page has not been modified for more than 3 months on the $lastmodDate";
-            $trafficLight_html = $this->createTrafficLight(0, $msg);
+            $trafficLight_html = $this->createTrafficLightHTML(0, $msg);
         }
 
-        // check if date less than 3 months and older than 1 month
+        // create a orange traffic light if the page was last modified between 1 and 3 months
         if ($pageageInSeconds < (3 * $monthInSeconds) && $pageageInSeconds > $monthInSeconds) {
             $msg = "The page has not been modified for more than 1 month on the $lastmodDate";
-            $trafficLight_html = $this->createTrafficLight(1, $msg);
+            $trafficLight_html = $this->createTrafficLightHTML(1, $msg);
         }
 
-        return $lastVisitHTML . $trafficLight_html;
+        // create a green traffic light if the page was last modified less than a month
+        if ($pageageInSeconds <= $monthInSeconds) {
+            $msg = "The page has been recently modified on the $lastmodDate";
+            $trafficLight_html = $this->createTrafficLightHTML(2, $msg);
+        };
+
+        return $trafficLight_html;
     }
 
     public function savePagevisit()
@@ -102,6 +109,9 @@ class helper_plugin_pageage extends DokuWiki_Plugin
         $res = $this->db->query($query);
 
         $lastVisitorsLog = $this->db->res2arr($res);
+
+        // a page visit is logged before the lastVisitHTML is created, so the first array
+        // second array element holds the last visitor
         $lastVisitorDetails = $lastVisitorsLog[1];
         $lastVisitor = $lastVisitorDetails["user"];
         $lastVisitedDate = $lastVisitorDetails["date"];
@@ -111,7 +121,7 @@ class helper_plugin_pageage extends DokuWiki_Plugin
         return $lastVisitorHTML;
     }
 
-    private function createTrafficLight($position, $msg)
+    public function createTrafficLightHTML($position, $msg)
     {
         $colorArray = array('red', 'orange', 'green');
 
