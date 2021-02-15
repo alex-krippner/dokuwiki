@@ -110,8 +110,12 @@ class helper_plugin_pageage extends DokuWiki_Plugin
 
         $lastVisitorsLog = $this->db->res2arr($res);
 
-        // a page visit is logged before the lastVisitHTML is created, so the first array
-        // second array element holds the last visitor
+        /**
+         * A page visit is logged before the lastVisitHTML is created, so the first array element
+         * holds the page visit that just occured and the
+         * second array element holds the last visitor
+         */
+
         $lastVisitorDetails = $lastVisitorsLog[1];
         $lastVisitor = $lastVisitorDetails["user"];
         $lastVisitedDate = $lastVisitorDetails["date"];
@@ -121,9 +125,19 @@ class helper_plugin_pageage extends DokuWiki_Plugin
         return $lastVisitorHTML;
     }
 
+    /**
+     * Creates a HTML and CSS traffic light symbol
+     *
+     * @param int $position Index position of the color in the $colorArray
+     * @param string $msg Message displayed to the user
+     * @return string
+     */
+
+
     public function createTrafficLightHTML($position, $msg)
     {
         $colorArray = array('red', 'orange', 'green');
+        $divArray = array();
 
         foreach ($colorArray as $idx=>$color) {
             if ($idx == $position) {
@@ -135,14 +149,12 @@ class helper_plugin_pageage extends DokuWiki_Plugin
 
         $divArray = implode("", $divArray);
 
-        $finalString =  "
+        return "
         <div class='traffic-light'>
             <div class='traffic-light__box'>
                 $divArray 
             </div>
             <span class='traffic-light__message'>$msg</span>
         </div>";
-
-        return $finalString;
     }
 }
