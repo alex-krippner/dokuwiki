@@ -120,10 +120,8 @@ class helper_plugin_pageage extends DokuWiki_Plugin
         $lastVisitor = $lastVisitorDetails["user"];
         $lastVisitedDate = $lastVisitorDetails["date"];
 
-        $lastVisitorHTML = "<div> The last visitor was $lastVisitor on the $lastVisitedDate </div>";
- 
-        return $lastVisitorHTML;
-    }
+        return "<div> The last visitor was $lastVisitor on the $lastVisitedDate </div>";
+     }
 
     /**
      * Creates a HTML and CSS traffic light symbol
@@ -137,22 +135,20 @@ class helper_plugin_pageage extends DokuWiki_Plugin
     public function createTrafficLightHTML($position, $msg)
     {
         $colorArray = array('red', 'orange', 'green');
-        $divArray = array();
+        $htmlString = "";
 
         foreach ($colorArray as $idx=>$color) {
             if ($idx == $position) {
-                $divArray[] = "<div class='traffic-light__lamp traffic-light__lamp--$color'></div> ";
+                $htmlString .= "<div class='traffic-light__lamp traffic-light__lamp--$color'></div> ";
             } elseif ($idx !== $position) {
-                $divArray[] = "<div class='traffic-light__lamp traffic-light__lamp--black'></div>";
+                $htmlString .= "<div class='traffic-light__lamp traffic-light__lamp--black'></div>";
             }
         };
 
-        $divArray = implode("", $divArray);
-
         return "
         <div class='traffic-light'>
-            <div class='traffic-light__box'>
-                $divArray 
+             <div class='traffic-light__box'>
+                $htmlString 
             </div>
             <span class='traffic-light__message'>$msg</span>
         </div>";
